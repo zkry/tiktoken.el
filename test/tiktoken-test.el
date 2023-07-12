@@ -27,6 +27,22 @@
         (should (= my-len their-len))
         (kill-buffer out-buf)))))
 
+(ert-deftest tikoken-test-encode-ordinary ()
+  "Tests that encoding is correct."
+  (should (equal (tiktoken-encode-ordinary (tiktoken-cl100k-base) "This is a test string!")
+                 '(2028 374 264 1296 925 0)))
+  (should (equal (tiktoken-encode-ordinary (tiktoken-p50k-base) "This is a test string!")
+                 '(1212 318 257 1332 4731 0)))
+  (should (equal (tiktoken-encode-ordinary (tiktoken-p50k-edit) "This is a test string!")
+                 '(1212 318 257 1332 4731 0)))
+  (should (equal (tiktoken-encode-ordinary (tiktoken-r50k-base) "This is a test string!")
+                 '(1212 318 257 1332 4731 0))))
+
+(ert-deftest tikoken-test-encode ()
+  "Tests that encoding is correct with special tokens."
+  (should (equal (tiktoken-encode (tiktoken-cl100k-base) "<|fim_prefix|> This is Prefix <|fim_suffix|> This is Suffix <|fim_middle|> This is Middle" 'all)
+                 '(100258 1115 374 57583 220 100260 1115 374 328 13866 220 100259 1115 374 12877))))
+
 ;;; Peculiar strings:
 ;; TODO Do more research into why these strings produce off-by-one error.
 ;; xREq_y!*8K!e55#BlS{Zj5Dl\#TJ):GIM*H8EUR  (dflf(3AS*BfUqg~z a3}9hAiXQE;rN?"zf:.|e(pW`Rj)c`#l(EM;vMQq@_b"RJU3%\W#>wgUF#k1-v%QzL?~?)OA6WaV<odJIhT:6$rHY 2ARM^?/o~7P[[\s#.w<We4IIl}iejja;vC<'hp(4Y21&_j[nqOK
