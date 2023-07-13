@@ -4,6 +4,7 @@
 ;; URL: https://github.com/zkry/tiktoken.el
 ;; Version: 0.0.1
 ;; Package-Requires: ((emacs "28.0") (f "0.20.0"))
+;; Keywords: tools
 ;;
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -71,7 +72,7 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'ht)
+(require 'f)
 
 (defgroup tiktoken nil
   "Byte-pair encoding tokenization for NLP applications."
@@ -427,81 +428,98 @@ No special tokens are taken into account."
 
 ;;; Encoders
 
-(defmemoize tiktoken-cl100k-base ()
+(defvar tiktoken--models (make-hash-table :test #'equal))
+
+(defun tiktoken-cl100k-base ()
   "Load ranks for cl100k_base and return it's encoder object."
-  (let ((ranks (tiktoken-load-model-bpe tiktoken-model-cl100k-base))
-        (special-tokens (let ((ht (make-hash-table :test 'equal)))
-                          (puthash tiktoken-special-endoftext 100257 ht)
-                          (puthash tiktoken-special-fim-prefix 100258 ht)
-                          (puthash tiktoken-special-fim-middle 100259 ht)
-                          (puthash tiktoken-special-fim-suffix 100260 ht)
-                          (puthash tiktoken-special-endofprompt 100276 ht)
-                          ht)))
-    (tiktoken-encoding-create
-     :name tiktoken-model-cl100k-base
-     :pat-str (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
-                      (seq (? (regex "[^\r\n[:alnum:]]"))
-                           (+ letter))
-                      (seq (repeat 1 3 digit))
-                      (seq (? " ")
-                           (+ (regex "[^[:blank:][:alnum:]]"))
-                           (* (in "\r\n")))
-                      (seq (* (in blank))
-                           (+ (in "\r\n")))
-                      (seq (+ (in blank)))))
-     :mergeable-ranks ranks
-     :special-tokens special-tokens)))
+  (or (gethash tiktoken-model-cl100k-base tiktoken--models)
+      (let* ((ranks (tiktoken-load-model-bpe tiktoken-model-cl100k-base))
+             (special-tokens (let ((ht (make-hash-table :test 'equal)))
+                               (puthash tiktoken-special-endoftext 100257 ht)
+                               (puthash tiktoken-special-fim-prefix 100258 ht)
+                               (puthash tiktoken-special-fim-middle 100259 ht)
+                               (puthash tiktoken-special-fim-suffix 100260 ht)
+                               (puthash tiktoken-special-endofprompt 100276 ht)
+                               ht))
+             (encoding (tiktoken-encoding-create
+                        :name tiktoken-model-cl100k-base
+                        :pat-str (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
+                                         (seq (? (regex "[^\r\n[:alnum:]]"))
+                                              (+ letter))
+                                         (seq (repeat 1 3 digit))
+                                         (seq (? " ")
+                                              (+ (regex "[^[:blank:][:alnum:]]"))
+                                              (* (in "\r\n")))
+                                         (seq (* (in blank))
+                                              (+ (in "\r\n")))
+                                         (seq (+ (in blank)))))
+                        :mergeable-ranks ranks
+                        :special-tokens special-tokens)))
+        (puthash tiktoken-model-cl100k-base encoding tiktoken--models)
+        encoding)))
 
-(defmemoize tiktoken-p50k-edit ()
+(defun tiktoken-p50k-edit ()
   "Load ranks for p50k_edit and return it's encoder object."
-  (let ((ranks (tiktoken-load-model-bpe tiktoken-model-p50k-edit))
-        (special-tokens (let ((ht (make-hash-table :test 'equal)))
-                          (puthash tiktoken-special-endoftext 50256 ht)
-                          (puthash tiktoken-special-fim-prefix 50281 ht)
-                          (puthash tiktoken-special-fim-middle 50282 ht)
-                          (puthash tiktoken-special-fim-suffix 50283 ht)
-                          ht)))
-    (tiktoken-encoding-create
-     :name tiktoken-model-p50k-edit
-     :pat-str (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
-                      (seq (? " ") (+ letter))
-                      (seq (? " ") (+ digit))
-                      (seq (? " ") (+ (regex "[^[:blank:][:alnum:]]")))
-                      (seq (+ blank))))
-     :mergeable-ranks ranks
-     :special-tokens special-tokens)))
+  (or
+   (gethash tiktoken-model-p50k-edit tiktoken--models)
+   (let* ((ranks (tiktoken-load-model-bpe tiktoken-model-p50k-edit))
+          (special-tokens (let ((ht (make-hash-table :test 'equal)))
+                            (puthash tiktoken-special-endoftext 50256 ht)
+                            (puthash tiktoken-special-fim-prefix 50281 ht)
+                            (puthash tiktoken-special-fim-middle 50282 ht)
+                            (puthash tiktoken-special-fim-suffix 50283 ht)
+                            ht))
+          (encoding (tiktoken-encoding-create
+                     :name tiktoken-model-p50k-edit
+                     :pat-str (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
+                                      (seq (? " ") (+ letter))
+                                      (seq (? " ") (+ digit))
+                                      (seq (? " ") (+ (regex "[^[:blank:][:alnum:]]")))
+                                      (seq (+ blank))))
+                     :mergeable-ranks ranks
+                     :special-tokens special-tokens)))
+     (puthash tiktoken-model-p50k-edit encoding tiktoken--models)
+     encoding)))
 
-(defmemoize tiktoken-p50k-base ()
+(defun tiktoken-p50k-base ()
   "Load ranks for p50k_edit and return it's encoder object."
-  (let ((ranks (tiktoken-load-model-bpe tiktoken-model-p50k-base))
-        (special-tokens (let ((ht (make-hash-table :test 'equal)))
-                          (puthash tiktoken-special-endoftext 50256 ht)
-                          ht)))
-    (tiktoken-encoding-create
-     :name tiktoken-model-p50k-base
-     :pat-str (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
-                      (seq (? " ") (+ letter))
-                      (seq (? " ") (+ digit))
-                      (seq (? " ") (+ (regex "[^[:blank:][:alnum:]]")))
-                      (seq (+ blank))))
-     :mergeable-ranks ranks
-     :special-tokens special-tokens)))
+  (or
+   (gethash tiktoken-model-p50k-base tiktoken--models)
+   (let* ((ranks (tiktoken-load-model-bpe tiktoken-model-p50k-base))
+          (special-tokens (let ((ht (make-hash-table :test 'equal)))
+                            (puthash tiktoken-special-endoftext 50256 ht)
+                            ht))
+          (encoding (tiktoken-encoding-create
+                     :name tiktoken-model-p50k-base
+                     :pat-str (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
+                                      (seq (? " ") (+ letter))
+                                      (seq (? " ") (+ digit))
+                                      (seq (? " ") (+ (regex "[^[:blank:][:alnum:]]")))
+                                      (seq (+ blank))))
+                     :mergeable-ranks ranks
+                     :special-tokens special-tokens)))
+     (puthash tiktoken-model-p50k-base encoding tiktoken--models)
+     encoding)))
 
-(defmemoize tiktoken-r50k-base ()
+(defun tiktoken-r50k-base ()
   "Load ranks for p50k_edit and return it's encoder object."
-  (let ((ranks (tiktoken-load-model-bpe tiktoken-model-r50k-base))
-        (special-tokens (let ((ht (make-hash-table :test 'equal)))
-                          (puthash tiktoken-special-endoftext 50256 ht))))
-    (tiktoken-encoding-create
-     :name tiktoken-model-r50k-base
-     :pat-str (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
-                      (seq (? " ") (+ letter))
-                      (seq (? " ") (+ digit))
-                      (seq (? " ") (+ (regex "[^[:blank:][:alnum:]]")))
-                      (seq (+ blank))))
-     :mergeable-ranks ranks
-     :special-tokens special-tokens)))
+  (or
+   (gethash tiktoken-model-r50k-base tiktoken--models)
+   (let* ((ranks (tiktoken-load-model-bpe tiktoken-model-r50k-base))
+          (special-tokens (let ((ht (make-hash-table :test 'equal)))
+                            (puthash tiktoken-special-endoftext 50256 ht)))
+          (encoding (tiktoken-encoding-create
+                     :name tiktoken-model-r50k-base
+                     :pat-str (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
+                                      (seq (? " ") (+ letter))
+                                      (seq (? " ") (+ digit))
+                                      (seq (? " ") (+ (regex "[^[:blank:][:alnum:]]")))
+                                      (seq (+ blank))))
+                     :mergeable-ranks ranks
+                     :special-tokens special-tokens)))
 
+     (puthash tiktoken-model-r50k-base encoding tiktoken--models)
+     encoding)))
 
 (defun tiktoken--encoding-from-name (encoding-name)
   "Create the model of ENCODING-NAME."
