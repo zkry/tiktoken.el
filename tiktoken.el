@@ -210,7 +210,11 @@ fetching the URL or loading from cache."
              (resp-buf (url-retrieve-synchronously url)))
         (unless resp-buf
           (error "Unexpected result fetching model for %s at %s" model url))
-        (let ((response-data (with-current-buffer resp-buf (buffer-string))))
+        (let ((response-data (with-current-buffer resp-buf
+                               (goto-char (point-min))
+                               (re-search-forward "^$")
+                               (delete-region (point) (point-min))
+                               (buffer-string))))
          (when cache-file
            (f-write response-data 'utf-8 cache-file))
          (tiktoken--parse-ranks response-data)))))))
