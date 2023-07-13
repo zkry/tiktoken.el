@@ -391,7 +391,7 @@ faster."
 (defun tiktoken-encode (encoding text allowed-special)
   "Use ENCODING to byte-pair encode TEXT.
 
-If ALLOWED-SPECIAL is the symbol 'all, utilize all special tokens
+If ALLOWED-SPECIAL is the symbol `all', utilize all special tokens
 defined in ENCODING  If ALLOWED-SPECIAL is nil, do not allow any
 special tokens.  Otherwise, ALLOWED-SPECIAL should be a list of
 special tokens to use."
