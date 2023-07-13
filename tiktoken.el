@@ -106,10 +106,22 @@ If set to nil or an empty string, caching will be disabled."
 
 (defconst tiktoken-model-urls
   (let ((ht (make-hash-table :test 'equal)))
-   (puthash tiktoken-model-cl100k-base "https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken" ht)
-   (puthash tiktoken-model-p50k-edit "https://openaipublic.blob.core.windows.net/encodings/p50k_base.tiktoken" ht)
-   (puthash tiktoken-model-p50k-base "https://openaipublic.blob.core.windows.net/encodings/p50k_base.tiktoken" ht)
-   (puthash tiktoken-model-r50k-base "https://openaipublic.blob.core.windows.net/encodings/r50k_base.tiktoken" ht)
+    (puthash
+     tiktoken-model-cl100k-base
+     "https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken"
+     ht)
+    (puthash
+     tiktoken-model-p50k-edit
+     "https://openaipublic.blob.core.windows.net/encodings/p50k_base.tiktoken"
+     ht)
+    (puthash
+     tiktoken-model-p50k-base
+     "https://openaipublic.blob.core.windows.net/encodings/p50k_base.tiktoken"
+     ht)
+    (puthash
+     tiktoken-model-r50k-base
+     "https://openaipublic.blob.core.windows.net/encodings/r50k_base.tiktoken"
+     ht)
    ht)
   "Mapping from model name to URL from wich to obtain the token rankings.")
 
@@ -371,7 +383,8 @@ faster."
         (if-let ((token (gethash piece ranks)))
             ;; TODO try to reverse append, and nreverse the result for better perf
             (cl-incf ret)
-          (let ((size (tiktoken--byte-pair-encode (encode-coding-string piece 'utf-8) ranks t)))
+          (let ((size (tiktoken--byte-pair-encode
+                       (encode-coding-string piece 'utf-8) ranks t)))
             (cl-incf ret size)))))
     ret))
 
@@ -403,9 +416,9 @@ No special tokens are taken into account."
     (let* ((matches (tiktoken--find-all-regexp-matches text regex)))
       (dolist (piece matches)
         (if-let ((token (gethash piece ranks)))
-            ;; TODO try to reverse append, and nreverse the result for better perf
             (setq ret (cons token ret))
-          (let ((tokens (tiktoken--byte-pair-encode (encode-coding-string piece 'utf-8) ranks)))
+          (let ((tokens (tiktoken--byte-pair-encode
+                         (encode-coding-string piece 'utf-8) ranks)))
             (setq ret (append tokens ret))))))
     (nreverse ret)))
 
@@ -440,16 +453,17 @@ No special tokens are taken into account."
                                ht))
              (encoding (tiktoken-encoding-create
                         :name tiktoken-model-cl100k-base
-                        :pat-str (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
-                                         (seq (? (regex "[^\r\n[:alnum:]]"))
-                                              (+ letter))
-                                         (seq (repeat 1 3 digit))
-                                         (seq (? " ")
-                                              (+ (regex "[^[:blank:][:alnum:]]"))
-                                              (* (in "\r\n")))
-                                         (seq (* (in blank))
-                                              (+ (in "\r\n")))
-                                         (seq (+ (in blank)))))
+                        :pat-str
+                        (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
+                                (seq (? (regex "[^\r\n[:alnum:]]"))
+                                     (+ letter))
+                                (seq (repeat 1 3 digit))
+                                (seq (? " ")
+                                     (+ (regex "[^[:blank:][:alnum:]]"))
+                                     (* (in "\r\n")))
+                                (seq (* (in blank))
+                                     (+ (in "\r\n")))
+                                (seq (+ (in blank)))))
                         :mergeable-ranks ranks
                         :special-tokens special-tokens)))
         (puthash tiktoken-model-cl100k-base encoding tiktoken--models)
@@ -468,11 +482,13 @@ No special tokens are taken into account."
                             ht))
           (encoding (tiktoken-encoding-create
                      :name tiktoken-model-p50k-edit
-                     :pat-str (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
-                                      (seq (? " ") (+ letter))
-                                      (seq (? " ") (+ digit))
-                                      (seq (? " ") (+ (regex "[^[:blank:][:alnum:]]")))
-                                      (seq (+ blank))))
+                     :pat-str
+                     (rx
+                      (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
+                          (seq (? " ") (+ letter))
+                          (seq (? " ") (+ digit))
+                          (seq (? " ") (+ (regex "[^[:blank:][:alnum:]]")))
+                          (seq (+ blank))))
                      :mergeable-ranks ranks
                      :special-tokens special-tokens)))
      (puthash tiktoken-model-p50k-edit encoding tiktoken--models)
@@ -488,11 +504,12 @@ No special tokens are taken into account."
                             ht))
           (encoding (tiktoken-encoding-create
                      :name tiktoken-model-p50k-base
-                     :pat-str (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
-                                      (seq (? " ") (+ letter))
-                                      (seq (? " ") (+ digit))
-                                      (seq (? " ") (+ (regex "[^[:blank:][:alnum:]]")))
-                                      (seq (+ blank))))
+                     :pat-str
+                     (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
+                             (seq (? " ") (+ letter))
+                             (seq (? " ") (+ digit))
+                             (seq (? " ") (+ (regex "[^[:blank:][:alnum:]]")))
+                             (seq (+ blank))))
                      :mergeable-ranks ranks
                      :special-tokens special-tokens)))
      (puthash tiktoken-model-p50k-base encoding tiktoken--models)
@@ -507,11 +524,12 @@ No special tokens are taken into account."
                             (puthash tiktoken-special-endoftext 50256 ht)))
           (encoding (tiktoken-encoding-create
                      :name tiktoken-model-r50k-base
-                     :pat-str (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
-                                      (seq (? " ") (+ letter))
-                                      (seq (? " ") (+ digit))
-                                      (seq (? " ") (+ (regex "[^[:blank:][:alnum:]]")))
-                                      (seq (+ blank))))
+                     :pat-str
+                     (rx (or "'s" "'t" "'re" "'ve" "'m" "'ll" "'d"
+                             (seq (? " ") (+ letter))
+                             (seq (? " ") (+ digit))
+                             (seq (? " ") (+ (regex "[^[:blank:][:alnum:]]")))
+                             (seq (+ blank))))
                      :mergeable-ranks ranks
                      :special-tokens special-tokens)))
 
