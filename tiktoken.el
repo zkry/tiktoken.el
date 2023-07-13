@@ -167,7 +167,7 @@ If set to nil or an empty string, caching will be disabled."
           (let ((str (base64-decode-string
                       (buffer-substring-no-properties start (1- (point)))))
                 (val (string-to-number
-                      (buffer-substring-no-properties (point) (pos-eol)))))
+                      (buffer-substring-no-properties (point) (line-end-position)))))
             (puthash str val ht)
             (forward-line 1)))))
     ht))
@@ -195,12 +195,15 @@ fetching the URL or loading from cache."
       (tiktoken--parse-ranks (f-read (gethash model tiktoken-offline-ranks))))
      (t
       (let* ((url (gethash model tiktoken-model-urls))
-             (resp (request url :sync t)))
-        (unless (<= 200 (request-response-status-code resp) 299)
+             (resp-buf (url-retrieve-synchronously url)))
+        (unless resp-buf
           (error "Unexpected result fetching model for %s at %s" model url))
-        (when cache-file
-          (f-write (request-response-data resp) 'utf-8 cache-file))
-        (tiktoken--parse-ranks (request-response-data resp)))))))
+        (let ((response-data (with-current-buffer resp-buf (buffer-string))))
+         (when cache-file
+           (f-write response-data 'utf-8 cache-file))
+         (tiktoken--parse-ranks response-data)))))))
+
+(tiktoken-load-model-bpe-2 "cl100k_base")
 
 (cl-defstruct (tiktoken-encoding
                (:constructor tiktoken-encoding-create)
@@ -315,7 +318,6 @@ Only special items of ALLOWED-SPECIAL are permitted."
          (regex (tiktoken-encoding-pat-str encoding))
          (ranks (tiktoken-encoding-mergeable-ranks encoding))
          (ret '())
-         (last-piece-token-len 0)
          (start 0))
     (catch 'break2
      (while t
@@ -344,11 +346,9 @@ Only special items of ALLOWED-SPECIAL are permitted."
            (dolist (piece matches)
              (if-let ((token (gethash piece ranks)))
                  (progn
-                   (setq last-piece-token-len 1)
                    (setq ret (cons token ret)))
                (let ((tokens (tiktoken--byte-pair-encode
-                              (string-as-unibyte piece) ranks)))
-                 (setq last-piece-token-len (length tokens))
+                              (encode-coding-string piece 'utf-8) ranks)))
                  (setq ret (append tokens ret)))))
            (if next-special
                (let* ((temp (substring text
@@ -356,8 +356,7 @@ Only special items of ALLOWED-SPECIAL are permitted."
                                        (+ start (cdr next-special))))
                       (token (gethash temp special-tokens)))
                  (setq ret (cons token ret))
-                 (cl-incf start (cdr next-special))
-                 (setq last-piece-token-len 0))
+                 (cl-incf start (cdr next-special)))
              (throw 'break2 nil))))))
     (nreverse ret)))
 
@@ -374,7 +373,7 @@ faster."
         (if-let ((token (gethash piece ranks)))
             ;; TODO try to reverse append, and nreverse the result for better perf
             (cl-incf ret)
-          (let ((size (tiktoken--byte-pair-encode (string-as-unibyte piece) ranks t)))
+          (let ((size (tiktoken--byte-pair-encode (encode-coding-string piece 'utf-8) ranks t)))
             (cl-incf ret size)))))
     ret))
 
