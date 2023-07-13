@@ -72,6 +72,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'subr-x)
 (require 'f)
 
 (defgroup tiktoken nil
