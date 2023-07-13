@@ -203,8 +203,6 @@ fetching the URL or loading from cache."
            (f-write response-data 'utf-8 cache-file))
          (tiktoken--parse-ranks response-data)))))))
 
-(tiktoken-load-model-bpe-2 "cl100k_base")
-
 (cl-defstruct (tiktoken-encoding
                (:constructor tiktoken-encoding-create)
                (:copier nil))
@@ -407,7 +405,7 @@ No special tokens are taken into account."
         (if-let ((token (gethash piece ranks)))
             ;; TODO try to reverse append, and nreverse the result for better perf
             (setq ret (cons token ret))
-          (let ((tokens (tiktoken--byte-pair-encode (string-as-unibyte piece) ranks)))
+          (let ((tokens (tiktoken--byte-pair-encode (encode-coding-string piece 'utf-8) ranks)))
             (setq ret (append tokens ret))))))
     (nreverse ret)))
 
