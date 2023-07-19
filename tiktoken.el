@@ -27,16 +27,8 @@
 ;;
 ;; The first thing required for usrage of this library is an encoding.
 ;; An encoding object contains the necessary metadata to encode/decode
-;; a piece of text.  The aspects of the encoding are:
-;;
-;; - The ranks of various byte pairs: These are the rules for
-;;   combining byte combinations into single tokens.  The file is
-;;   fetched over the internet.
-;;
-;; - The regex splitter: This is a base regular expression that splits
-;;   the text into pieces which can be merged.
-;;
-;; - Special token rules: Special tokens that divide the main text.
+;; a piece of text.  The aspects of the encoding are pre-configured in
+;; this package.
 ;;
 ;; If you know the encoding you want, you can directly obtain it with
 ;; the following functions: `tiktoken-cl100k-base',
@@ -188,7 +180,7 @@ If set to nil or an empty string, caching will be disabled."
 (defun tiktoken-load-model-bpe (model)
   "Fetch the MODEL encodings ranks and return it parsed into a hash table.
 
-If `tiktoken-cache-dir' is non-nil and not empy, first look for
+If `tiktoken-cache-dir' is non-nil and not empty, first look for
 the cached file under the name
 \"<tiktoken-cache-dir>/<MODEL>.txt\".  If such a file exists,
 don't fetch from the external URL and use the file instead.  If
@@ -308,7 +300,7 @@ the encoding itself."
      counts-only)))
 
 (defun tiktoken-find-regex->string-index (str regexp)
-  "Find match of REGEXP in STR, returning start and end indecies."
+  "Find match of REGEXP in STR, returning start and end indices."
   (save-match-data
     (let ((idx (string-match regexp str)))
       (when idx
@@ -552,7 +544,7 @@ No special tokens are taken into account."
     (tiktoken-r50k-base))
    ((equal encoding-name tiktoken-model-p50k-edit)
     (tiktoken-p50k-base))
-   (t (error "Unrecognized encoding name: %s" encoding-name))))
+   (t (user-error "Unrecognized encoding name: %s" encoding-name))))
 
 (defun tiktoken-encoding-for-model (model-name)
   "Return the encoding object of MODEL-NAME."
@@ -564,7 +556,7 @@ No special tokens are taken into account."
          (when (string-prefix-p k model-name)
            (throw 'res (tiktoken--encoding-from-name v))))
        tiktoken-model-prefix-to-encoding)
-      (error "No encoding for model %s" model-name))))
+      (user-error "No encoding for model %s" model-name))))
 
 (provide 'tiktoken)
 ;;; tiktoken.el ends here
