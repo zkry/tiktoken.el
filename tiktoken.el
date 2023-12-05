@@ -150,8 +150,8 @@ If set to nil or an empty string, caching will be disabled."
     (puthash "text-search-ada-doc-001" tiktoken-model-r50k-base ht)
     (puthash "code-search-babbage-code-001" tiktoken-model-r50k-base ht)
     (puthash "code-search-ada-code-001" tiktoken-model-r50k-base ht)
-    ht
-    "Map of model name to encoder."))
+    ht)
+  "Map of model name to encoder.")
 
 (defconst tiktoken-model-prefix-to-encoding
   (let ((ht (make-hash-table :test 'equal)))
