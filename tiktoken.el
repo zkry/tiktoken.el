@@ -120,6 +120,7 @@ If set to nil or an empty string, caching will be disabled."
 
 (defconst tiktoken-model-to-encoding
   (let ((ht (make-hash-table :test 'equal)))
+    (puthash "gpt-4" tiktoken-model-cl100k-base ht)
     (puthash "gpt-3.5-turbo" tiktoken-model-cl100k-base ht)
     (puthash "text-davinci-003" tiktoken-model-p50k-base ht)
     (puthash "text-davinci-002" tiktoken-model-p50k-base ht)
